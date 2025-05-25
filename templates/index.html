@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Security Chatbot</title>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: black;
+            color: #00ff00;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 720px;
+            margin: 50px auto;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #00ff00;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 0 15px #00ff00cc;
+        }
+
+        h2 {
+            text-align: center;
+            color: #00ff00;
+            text-shadow: 0 0 4px #00ff00;
+            margin-bottom: 20px;
+        }
+
+        #chat-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 400px;
+            overflow-y: auto;
+            background: #000;
+            border: 1px solid #00ff00aa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: inset 0 0 8px #00ff00aa;
+            scrollbar-color: #00ff00 #000;
+        }
+
+        #chat-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-box::-webkit-scrollbar-thumb {
+            background-color: #00ff00aa;
+            border-radius: 10px;
+        }
+
+        .msg {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 1rem;
+            word-wrap: break-word;
+        }
+
+        .user {
+            align-self: flex-end;
+            background: #00ff00;
+            color: #000;
+            font-weight: bold;
+            text-align: right;
+            border-top-right-radius: 0;
+        }
+
+        .bot {
+            align-self: flex-start;
+            background: #111;
+            color: #00ff00;
+            font-weight: normal;
+            border-top-left-radius: 0;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            /* This creates space between input and button */
+            margin-top: 10px;
+        }
+
+        .input-wrapper input[type="text"] {
+            flex-grow: 1;
+            background: #000;
+            border: 1px solid #00ff00;
+            border-radius: 20px;
+            padding: 10px 40px 10px 70px;
+            color: #00ff00;
+            font-size: 1rem;
+            outline: none;
+            position: relative;
+        }
+
+        .input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .input-icons {
+            position: absolute;
+            margin-left: 550px;
+            display: flex;
+            gap: 10px;
+            font-size: 1.3rem;
+            color: #00ff00;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .send-button {
+            background: #00ff00;
+            color: #000;
+            padding: 15px 16px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 0 3px #00ff00aa;
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+        }
+
+        .send-button:hover {
+            background: #00e600;
+            transform: scale(1.1);
+        }
+
+        .send-button:active {
+            background: #00cc00;
+            transform: scale(0.95);
+        }
+
+
+        #user-input {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid #00ff00;
+            background: #000;
+            color: #00ff00;
+        }
+
+        #user-input::placeholder {
+            color: #00ff00aa;
+        }
+
+        button {
+            background: #00ff00;
+            color: #000;
+            padding: 10px 16px;
+            border-spacing: 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 0 3px #00ff00aa;
+        }
+
+        #file-input,
+        #video,
+        #snapshot {
+            margin-top: 10px;
+        }
+
+        #video,
+        #snapshot {
+            display: none;
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Matrix background -->
+    <canvas id="matrix"></canvas>
+
+    <div class="container">
+        <h2>💻 Personal Chatbot</h2>
+        <div id="chat-box"></div>
+
+        <!-- Send Button -->
+
+        <div class="input-wrapper">
+
+            <!-- Text box -->
+            <input type="text" id="user-input" placeholder="Type your security question..." />
+
+            <!-- Hidden file input triggered by 📎 -->
+            <input type="file" id="file-input" onchange="uploadFile()" />
+
+            <!-- Icons inside input -->
+            <div class="input-icons">
+                <span onclick="capturePhoto()">📷</span>
+                <span onclick="document.getElementById('file-input').click()">📎</span>
+
+            </div>
+            <!-- Send icon -->
+            <button onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i> Send
+            </button>
+        </div>
+
+
+
+        <!-- Chat + Upload Scripts -->
+        <script>
+            function sendMessage() {
+                const input = document.getElementById("user-input");
+                const message = input.value.trim();
+                if (!message) return;
+                input.value = "";
+
+                const chatBox = document.getElementById("chat-box");
+                chatBox.innerHTML += `<div class="msg user">You: ${message}</div>`;
+
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        chatBox.innerHTML += `<div class="msg bot">Bot: ${data.response}</div>`;
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    });
+            }
+
+            function uploadFile() {
+                const fileInput = document.getElementById('file-input');
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    alert("Please select a file to upload.");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        const chatBox = document.getElementById("chat-box");
+                        chatBox.innerHTML += `<div class="msg bot">Bot: ${data.message}</div>`;
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    });
+            }
+
+            function capturePhoto() {
+                const video = document.getElementById('video');
+                const canvas = document.getElementById('snapshot');
+
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        video.style.display = 'block';
+                        video.srcObject = stream;
+
+                        setTimeout(() => {
+                            canvas.style.display = 'block';
+                            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                            stream.getTracks().forEach(track => track.stop());
+                            video.style.display = 'none';
+
+                            canvas.toBlob(blob => {
+                                const formData = new FormData();
+                                formData.append('file', blob, 'snapshot.png');
+
+                                fetch('/upload', {
+                                    method: 'POST',
+                                    body: formData
+                                })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        const chatBox = document.getElementById("chat-box");
+                                        chatBox.innerHTML += `<div class="msg bot">Bot: ${data.message}</div>`;
+                                        chatBox.scrollTop = chatBox.scrollHeight;
+                                    });
+                            }, 'image/png');
+                        }, 2000);
+                    })
+                    .catch(err => alert("Camera access denied or not available."));
+            }
+        </script>
+
+        <!-- Matrix effect background -->
+        <script>
+            const canvas = document.getElementById("matrix");
+            const ctx = canvas.getContext("2d");
+
+            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth;
+
+            const letters = "01";
+            const fontSize = 14;
+            const columns = canvas.width / fontSize;
+            const drops = Array.from({ length: columns }).fill(1);
+
+            function drawMatrix() {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = "#00ff00";
+                ctx.font = fontSize + "px monospace";
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = letters[Math.floor(Math.random() * letters.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+
+                    drops[i]++;
+                }
+            }
+
+            setInterval(drawMatrix, 50);
+        </script>
+</body>
+
+</html>
