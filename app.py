@@ -6,7 +6,7 @@ app = Flask(__name__, template_folder='templates')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-API_KEY = "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"
+API_KEY = os.getenv("OPENROUTER_API_KEY")
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 @app.route('/')
