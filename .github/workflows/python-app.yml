@@ -25,16 +25,19 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: ✅ Check Syntax (basic)
+    - name: ✅ Check Syntax
       run: python -m py_compile app.py
 
-    - name: Set up API key
-      run: echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> $GITHUB_ENV
-
-    - name: 🚀 Run Flask App (optional)
+    - name: 🔐 Inject API Key + Flask Env
       run: |
-        export FLASK_APP=app.py
-        export FLASK_ENV=development
-        flask run &
-        sleep 10
-        curl http://127.0.0.1:5000
+        echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> $GITHUB_ENV
+        echo "FLASK_APP=app.py" >> $GITHUB_ENV
+        echo "FLASK_ENV=development" >> $GITHUB_ENV
+
+    - name: 🚀 Run Flask App in Background
+      run: |
+        flask run --host=127.0.0.1 --port=5000 &
+        sleep 5
+
+    - name: 🧪 Test Flask Server Running
+      run: curl http://127.0.0.1:5000
