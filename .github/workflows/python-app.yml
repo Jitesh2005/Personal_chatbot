@@ -28,6 +28,9 @@ jobs:
     - name: ✅ Check Syntax (basic)
       run: python -m py_compile app.py
 
+    - name: Set up API key
+      run: echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> $GITHUB_ENV
+
     - name: 🚀 Run Flask App (optional)
       run: |
         export FLASK_APP=app.py
