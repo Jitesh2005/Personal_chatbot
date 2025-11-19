@@ -90,6 +90,26 @@
             color: #00ff00;
             font-weight: normal;
             border-top-left-radius: 0;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .bot strong {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .bot ul, .bot ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .bot li {
+            margin: 5px 0;
+        }
+
+        .bot p {
+            margin: 10px 0;
         }
 
         .input-wrapper {
@@ -224,6 +244,19 @@
 
         <!-- Chat + Upload Scripts -->
         <script>
+            function formatBotResponse(text) {
+                // Convert markdown-style formatting to HTML
+                text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Bold
+                text = text.replace(/\* (.*?)(?=\n|$)/g, '• $1'); // Bullet points
+                text = text.replace(/(\d+)\. /g, '$1. '); // Numbered lists
+                
+                // Add line breaks for better readability
+                text = text.replace(/\n\n/g, '<br><br>');
+                text = text.replace(/\n/g, '<br>');
+                
+                return text;
+            }
+
             function sendMessage() {
                 const input = document.getElementById("user-input");
                 const message = input.value.trim();
@@ -240,7 +273,8 @@
                 })
                     .then(res => res.json())
                     .then(data => {
-                        chatBox.innerHTML += `<div class="msg bot">Bot: ${data.response}</div>`;
+                        const formattedResponse = formatBotResponse(data.response);
+                        chatBox.innerHTML += `<div class="msg bot">Bot: ${formattedResponse}</div>`;
                         chatBox.scrollTop = chatBox.scrollHeight;
                     });
             }

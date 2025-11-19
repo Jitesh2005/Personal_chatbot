@@ -1,13 +1,16 @@
 from flask import Flask, request, jsonify, render_template
 import requests
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__, template_folder='templates')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-API_KEY = "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"
-API_URL = "https://openrouter.ai/api/v1/chat/completions"
+API_KEY = os.getenv("GROQ_API_KEY", "")
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 @app.route('/')
 def home():
@@ -21,24 +24,44 @@ def chat():
     if not user_message:
         return jsonify({"response": "Please enter a message."})
 
+    if not API_KEY:
+        return jsonify({"response": "⚠️ API key not configured. Please set GROQ_API_KEY in .env file."})
+
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
     }
 
     payload = {
-        "model": "mistralai/mistral-7b-instruct",
+        "model": "llama-3.3-70b-versatile",
         "messages": [
             {"role": "system", "content": "You are a helpful assistant that explains cybersecurity concepts clearly."},
             {"role": "user", "content": user_message}
-        ]
+        ],
+        "temperature": 0.7,
+        "max_tokens": 1024
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+        
+        if response.status_code == 400:
+            error_detail = response.json().get('error', {}).get('message', 'Bad request')
+            return jsonify({"response": f"⚠️ Bad request: {error_detail}"})
+        elif response.status_code == 429:
+            return jsonify({"response": "⚠️ API rate limit exceeded. Please try again later."})
+        elif response.status_code == 401:
+            return jsonify({"response": "⚠️ Invalid API key. Please check your GROQ_API_KEY."})
+        elif response.status_code == 403:
+            return jsonify({"response": "⚠️ Access forbidden. Please check your API key permissions."})
+        
         response.raise_for_status()
         reply = response.json()['choices'][0]['message']['content'].strip()
         return jsonify({"response": reply})
+    except requests.exceptions.Timeout:
+        return jsonify({"response": "⚠️ Request timed out. Please try again."})
+    except requests.exceptions.RequestException as e:
+        return jsonify({"response": f"⚠️ Network error: {str(e)}"})
     except Exception as e:
         return jsonify({"response": f"⚠️ Error: {str(e)}"})
 

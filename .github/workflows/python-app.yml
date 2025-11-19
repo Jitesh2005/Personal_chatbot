@@ -30,7 +30,7 @@ jobs:
 
     - name: 🔐 Inject API Key + Flask Env
       run: |
-        echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> $GITHUB_ENV
+        echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> $GITHUB_ENV
         echo "FLASK_APP=app.py" >> $GITHUB_ENV
         echo "FLASK_ENV=development" >> $GITHUB_ENV
 
